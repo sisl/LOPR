@@ -14,28 +14,28 @@ Below, we visualize two examples of predictions. For more results, check out our
 
 ## Setup
 
-- Python 3.X
-- Libraries: PyTorch (X) + ...
-- Tested on Ubuntu 20.04 + Nvidia RTX TITAN with CUDA X.Y
+- Python 3.7.10
+- Libraries: PyTorch (1.7.1) + ...
+- Tested on Ubuntu 20.04 + Nvidia RTX TITAN
 
 ## Training
 
 1. Task-independent Representation Learning
 
 ```python
-python scripts/main.py
+python src/representation_learning/main.py
 ```
 
 2. Convert the OGM dataset to latent dataset.
 
 ```python
-python scripts/convert.py
+python src/dataset/process_dataset_to_latents.py
 ```
 
 3. Task-dependent Supervised Learning Learning
 
 ```python
-python scripts/main.py
+python src/prediction/train.py
 ```
 
 ## Visualize results
