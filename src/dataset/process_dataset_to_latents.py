@@ -8,10 +8,7 @@ from torch.utils import data
 import torchvision
 import os
 import sys
-sys.path.append('/home/benksy/Projects')
-sys.path.append('/home/benksy/Projects/drivegan_code_modified_old')
 from drivegan_code_modified_old.latent_decoder_model.dataset import BernardImageDatasetRaw
-sys.path.append('/home/benksy/Projects/DynamicsEngine/src/generator_encoder')
 from load_styleVAE import load_styleVAE
 from tqdm import tqdm
 import cv2
@@ -93,8 +90,6 @@ if __name__ == '__main__':
     parser.add_argument('--theme_spat_dim', type=int, default=32)
     args = parser.parse_args()
 
-    # load training and validation datasets
-    # path = '/home/benksy/Projects/Datasets/NusceensImgDatasetStylegan'
     dataset = 'carla' #Why?
     size = 128
     batch = 128
@@ -145,94 +140,22 @@ if __name__ == '__main__':
                     pickle.dump(data, f)
 
 
-            # if batch_ndx%1000 == 0:
-            #     img_path = f'{latent_dataset_path}/vis/{mode}/{scene_id}_{frame[:-4]}'
-            #     recon_img = out['image']
-            #     save_img(f'{img_path}_recon.png', recon_img, recon_img.shape[0])
-            #     save_img(f'{img_path}_real.png', real_img, real_img.shape[0])
-
-    # def visualize_dataset(loader, mode, randomly_visualize=False):
-    #     """
-    #     Converts the image dataset to latent vector dataset
-    #     """
-    #     for batch_ndx, sample in tqdm(enumerate(iter(loader))):
-    #         #print(f'Sample {batch_ndx} - {sample[1], sample[0].shape}')
-    #         real_img = sample[0].cuda()
-    #         fns = sample[1]
-
-    #         # Convert to latents
-    #         if randomly_visualize and batch_ndx%1000 == 0:
-    #             return_latent_only = False
-    #         else:
-    #             return_latent_only = True
-
-    #         out = vae(real_img, replace_input={}, decode_only=False, return_latent_only=return_latent_only, train=False)
-
-    #         img_path = f'val'
-    #         recon_img = out['image']
-    #         save_img(f'{img_path}_recon.png', recon_img, recon_img.shape[0])
-    #         save_img(f'{img_path}_real.png', real_img, real_img.shape[0])
-    #         break
-
-    # def visualize_sequence_dataset(mode='train'):
-    #     """
-    #     Converts the image dataset to latent vector dataset
-    #     """
-
-    #     config = {
-    #     "datafile": "/home/benksy/Projects/Datasets/NuscenesImgDatasetWithIdsStyleGAN",
-    #     "nt": 20,
-    #     "mode": "all"
-    #     }
-
-    #     dataset = SequenceDatasetDriveGAN(config, mode)
-
-    #     work = 0
-    #     B = 32
-    #     train_dataloader = torch.utils.data.DataLoader(dataset, batch_size = B, shuffle = True, num_workers=work)
-    #     batched_img = next(iter(train_dataloader))
-
-    #     for idx in range(B):
-    #         img = batched_img[idx]
-    #         img = img.squeeze(0)
-    #         # print(f'Set of images:{img.shape}')
-    #         img = img.reshape((20,3,128,128)).cuda()
-
-    #         with torch.no_grad():
-    #             out = vae(img, replace_input={}, decode_only=False, return_latent_only=False, train=False)
-    #         decoded_img = out['image']
-    #         plot_img = torch.stack([img, decoded_img], 0).cpu() #.numpy()
-    #         save_img_sequence(f'src/dataset/vis_sequence/{mode}/{idx}.png', plot_img, plot_img.shape[0])
-
-
-    test_dataset = BernardImageDatasetRaw(args.path+'/test', args.dataset, args.size, every_second=True, train=False, args=args)
-    test_loader = data.DataLoader(
-        test_dataset,
-        batch_size=256,
-        # collate_fn=collate_fn
-        # sampler=data_sampler(val_dataset, shuffle=False, distributed=args.distributed),
-        # drop_last=True,
-        # collate_fn=collate_fn
-    )
     train_dataset = BernardImageDatasetRaw(args.path+'/train', args.dataset, args.size, every_second=True, train=False, args=args)
     train_loader = data.DataLoader(
         train_dataset,
         batch_size=256,
-        # collate_fn=collate_fn
-        # sampler=data_sampler(val_dataset, shuffle=False, distributed=args.distributed),
-        # drop_last=True,
-        # collate_fn=collate_fn
     )
     val_dataset = BernardImageDatasetRaw(args.path+'/val', args.dataset, args.size, every_second=True, train=False, args=args)
     val_loader = data.DataLoader(
         val_dataset,
         batch_size=256,
-        # collate_fn=collate_fn
-        # sampler=data_sampler(val_dataset, shuffle=False, distributed=args.distributed),
-        # drop_last=True,
-        # collate_fn=collate_fn
     )
-    # print('Total validation dataset length: ' + str(len(train_dataset)))
+
+    test_dataset = BernardImageDatasetRaw(args.path+'/test', args.dataset, args.size, every_second=True, train=False, args=args)
+    test_loader = data.DataLoader(
+        test_dataset,
+        batch_size=256,
+    )
 
     latent_dataset_path = '/home/benksy/Projects/Datasets/LatentVAENuscenesDatasetAugust2022'
     # os.mkdir(os.path.join(latent_dataset_path, 'train'))
@@ -240,8 +163,6 @@ if __name__ == '__main__':
     # os.mkdir(os.path.join(latent_dataset_path, 'test'))
     # os.mkdir(os.path.join(latent_dataset_path, 'vis'))
 
-
-    #visualize_sequence_dataset(mode='val')
     with torch.no_grad():
         convert_dataset(train_loader, 'train', randomly_visualize=True)
         convert_dataset(val_loader, 'val', randomly_visualize=True)

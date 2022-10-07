@@ -10,10 +10,7 @@ from torch import nn
 import torch.nn.modules.conv as conv
 from torch.nn import functional as F
 from torch.autograd import Function
-try:
-    from op import FusedLeakyReLU, fused_leaky_relu, upfirdn2d
-except:
-    from latent_decoder_model.op import FusedLeakyReLU, fused_leaky_relu, upfirdn2d
+from src.representation_learning.op import FusedLeakyReLU, fused_leaky_relu, upfirdn2d
 
 class View(nn.Module):
     def __init__(self, size):

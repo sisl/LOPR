@@ -9,10 +9,11 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.autograd import Function
-try:
-    from model.operations import *
-except:
-    from latent_decoder_model.model.operations import *
+# try:
+#     from model.operations import *
+# except:
+#     from latent_decoder_model.model.operations import *
+from src.representation_learning.model.operations import *
 
 class styleVAEGAN(nn.Module):
     def __init__(self, size, n_mlp=8, channel_multiplier=2, args=None):

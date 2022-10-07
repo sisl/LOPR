@@ -2,6 +2,8 @@
 Copyright (C) 2021 NVIDIA Corporation.  All rights reserved.
 Licensed under the NVIDIA Source Code License. See LICENSE at the main github page.
 Authors: Seung Wook Kim, Jonah Philion, Antonio Torralba, Sanja Fidler
+
+Small modifications by Bernard Lange.
 """
 
 import argparse
@@ -9,6 +11,7 @@ import math
 import os
 import numpy as np
 import torch
+import sys
 from torch import nn, autograd, optim
 from torch.nn import functional as F
 from torch.utils import data
@@ -17,20 +20,25 @@ from torchvision import utils
 from torch.utils.tensorboard import SummaryWriter
 import lpips
 import cv2
-from model.model import Discriminator, styleVAEGAN
-from dataset import ImageDataset
-from lpips import networks_basic as networks
-from distributed import (
+import pathlib
+
+sys.path.append(str(pathlib.Path(__file__).parents[2]))
+# sys.path.append('/home/benksy/Projects/LOPR')
+from src.representation_learning.model.model import Discriminator, styleVAEGAN
+from src.representation_learning.dataset import BernardRGBImageDataset
+
+from src.representation_learning.lpips import networks_basic as networks
+from src.representation_learning.distributed import (
     get_rank,
     synchronize,
     reduce_loss_dict,
     reduce_sum,
     get_world_size,
 )
-
 import sys
-sys.path.append('/home/benksy/Projects/DriveGAN_code/latent_decoder_model')
-sys.path.append('/home/benksy/Projects/DriveGAN_code')
+
+# sys.path.append('/home/benksy/Projects/DriveGAN_code/latent_decoder_model')
+# sys.path.append('/home/benksy/Projects/DriveGAN_code')
 
 torch.backends.cudnn.benchmark = True
 
@@ -385,12 +393,15 @@ if __name__ == '__main__':
     device = 'cuda'
 
     parser = argparse.ArgumentParser()
+    from datetime import datetime
+    date = datetime.now().isoformat(timespec='minutes')
+    model_name = f'representation-learning-{date}'
 
-    parser.add_argument('--path', type=str, default=None)
+    parser.add_argument('--path', type=str, default='/media/benksy/T7/nuscenes_imgs/nuscenes_dataset_imgs')
     parser.add_argument('--iter', type=int, default=800000)
     parser.add_argument('--save_iter', type=int, default=10000)
 
-    parser.add_argument('--batch', type=int, default=32)
+    parser.add_argument('--batch', type=int, default=24)
     parser.add_argument('--n_sample', type=int, default=6)
     parser.add_argument('--size', type=int, default=128)
     parser.add_argument('--r1', type=float, default=10)
@@ -402,11 +413,11 @@ if __name__ == '__main__':
     parser.add_argument('--g_reg_every', type=int, default=4)
     parser.add_argument('--ckpt', type=str, default=None)
 
-    parser.add_argument('--log_dir', type=str, default='/results')
+    parser.add_argument('--log_dir', type=str, default=f'./outputs/{model_name}')
     parser.add_argument('--lr', type=float, default=0.002)
     parser.add_argument('--channel_multiplier', type=int, default=2)
     parser.add_argument('--local_rank', type=int, default=0)
-    parser.add_argument('--dataset', type=str, default='carla')
+    parser.add_argument('--dataset', type=str, default='nuscenes_ogm')
     parser.add_argument('--n_mlp', type=int, default=8)
     parser.add_argument('--constant_input_size', type=int, default=4)
     parser.add_argument('--num_patchD', type=int, default=0)
@@ -432,7 +443,8 @@ if __name__ == '__main__':
     # net for perceptual loss
     percept = networks.PNetLin(pnet_rand=False, pnet_tune=False, pnet_type='vgg',
                                 use_dropout=True, spatial=False, version='0.1', lpips=True).to(device)
-    model_path = './lpips/weights/v0.1/vgg.pth'
+    model_path = './src/representation_learning/lpips/weights/v0.1/vgg.pth'
+
     print('Loading vgg model from: %s' % model_path)
     percept.load_state_dict(torch.load(model_path), strict=False)
 
@@ -511,29 +523,28 @@ if __name__ == '__main__':
         return torch.utils.data.dataloader.default_collate(batch)
 
     # load training and validation datasets
-    img_dataset = ImageDataset(args.path, args.dataset, args.size, train=True, args=args)
-    loader = data.DataLoader(
-        img_dataset,
+    train_dataset = BernardRGBImageDataset(args.path, args.dataset, args.size, train=True, args=args)
+    train_loader = data.DataLoader(
+        train_dataset,
         batch_size=args.batch,
-        sampler=data_sampler(img_dataset, shuffle=True, distributed=args.distributed),
+        sampler=data_sampler(train_dataset, shuffle=True, distributed=args.distributed),
         drop_last=True,
         collate_fn=collate_fn
     )
-    print('Total training dataset length: ' + str(len(img_dataset)))
+    print('Total training dataset length: ' + str(len(train_dataset)))
 
-    val_dataset = ImageDataset(args.path, args.dataset, args.size, train=False, args=args)
-    val_loader = data.DataLoader(
-        val_dataset,
-        batch_size=args.batch,
-        sampler=data_sampler(val_dataset, shuffle=False, distributed=args.distributed),
-        drop_last=True,
-        collate_fn=collate_fn
-    )
-    print('Total validation dataset length: ' + str(len(val_dataset)))
+    # val_dataset = BernardImageDataset(args.path+'/val', args.dataset, args.size, train=False, args=args)
+    # val_loader = data.DataLoader(
+    #     val_dataset,
+    #     batch_size=args.batch,
+    #     sampler=data_sampler(val_dataset, shuffle=False, distributed=args.distributed),
+    #     drop_last=True,
+    #     collate_fn=collate_fn
+    # )
+    # print('Total validation dataset length: ' + str(len(val_dataset)))
 
-    num_val = len(val_loader)
     logger = None
     if get_rank() == 0:
         logger = SummaryWriter(args.log_dir)
 
-    train(args, loader, val_loader, num_val, vae, discriminator, vae_optim, d_optim, vae_ema, device, logger, percept)
+    train(args, train_loader, train_loader, None, vae, discriminator, vae_optim, d_optim, vae_ema, device, logger, percept)
