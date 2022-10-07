@@ -1,6 +1,6 @@
 # LOPR: Latent Occupancy PRediction using Generative Models
 
-This is the official implementation of LOPR used in "LOPR: Latent Occupancy PRediction using Generative Models" ([arXiv](google.com)).
+This is the official implementation of LOPR used in "LOPR: Latent Occupancy PRediction using Generative Models" ([arXiv](https://arxiv.org/abs/2210.01249)).
 
 ## Abstract:
 Environment prediction frameworks are essential for autonomous vehicles to facilitate safe maneuvers in a dynamic environment. Previous approaches have used occupancy grid maps as a bird’s eye-view representation of the scene and optimized the prediction architectures directly in pixel space. Although these methods have had some success in spatiotemporal prediction, they are, at times, hindered by unrealistic and incorrect predictions. We postulate that the quality and realism of the forecasted occupancy grids can be improved with the use of generative models. We propose a framework that decomposes occupancy grid prediction into task-independent low-dimensional representation learning and task-dependent prediction in the latent space. We demonstrate that our approach achieves state-of-the-art performance on the real-world autonomous driving dataset, NuScenes.
@@ -14,28 +14,28 @@ Below, we visualize two examples of predictions. For more results, check out our
 
 ## Setup
 
-- Python 3.X
-- Libraries: PyTorch (X) + ...
-- Tested on Ubuntu 20.04 + Nvidia RTX TITAN with CUDA X.Y
+- Python 3.7.10
+- Libraries: PyTorch (1.7.1)
+- Tested on Ubuntu 20.04 + Nvidia RTX TITAN
 
 ## Training
 
 1. Task-independent Representation Learning
 
 ```python
-python scripts/main.py
+python src/representation_learning/main.py
 ```
 
 2. Convert the OGM dataset to latent dataset.
 
 ```python
-python scripts/convert.py
+python src/dataset/process_dataset_to_latents.py
 ```
 
 3. Task-dependent Supervised Learning Learning
 
 ```python
-python scripts/main.py
+python src/prediction/train.py
 ```
 
 ## Visualize results
@@ -58,7 +58,14 @@ DriveGAN implementation uses:
 
 If you use this work, please cite:
 ```
-ARXIV REFERENCE
+@misc{lange2022lopr,
+      title={LOPR: Latent Occupancy PRediction using Generative Models}, 
+      author={Bernard Lange and Masha Itkina and Mykel J. Kochenderfer},
+      year={2022},
+      eprint={2210.01249},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO}
+}
 ```
 
 
