@@ -18,14 +18,13 @@ from torch.utils import data
 import torch.distributed as dist
 from torchvision import utils
 from torch.utils.tensorboard import SummaryWriter
-import lpips
+
 import cv2
 import pathlib
 
-sys.path.append(str(pathlib.Path(__file__).parents[2]))
-# sys.path.append('/home/benksy/Projects/LOPR')
+sys.path.append(str(pathlib.Path(__file__).parents[1]))
 from src.representation_learning.model.model import Discriminator, styleVAEGAN
-from src.representation_learning.dataset import BernardRGBImageDataset
+from src.dataset.single_frame_dataset import OGMImageDataset #RGBImageDataset
 
 from src.representation_learning.lpips import networks_basic as networks
 from src.representation_learning.distributed import (
@@ -397,7 +396,7 @@ if __name__ == '__main__':
     date = datetime.now().isoformat(timespec='minutes')
     model_name = f'representation-learning-{date}'
 
-    parser.add_argument('--path', type=str, default='/media/benksy/T7/nuscenes_imgs/nuscenes_dataset_imgs')
+    parser.add_argument('--path', type=str)
     parser.add_argument('--iter', type=int, default=800000)
     parser.add_argument('--save_iter', type=int, default=10000)
 
@@ -523,7 +522,7 @@ if __name__ == '__main__':
         return torch.utils.data.dataloader.default_collate(batch)
 
     # load training and validation datasets
-    train_dataset = BernardRGBImageDataset(args.path, args.dataset, args.size, train=True, args=args)
+    train_dataset = OGMImageDataset(args.path + '/train', args.dataset, args.size, train=True, args=args)
     train_loader = data.DataLoader(
         train_dataset,
         batch_size=args.batch,
@@ -533,18 +532,18 @@ if __name__ == '__main__':
     )
     print('Total training dataset length: ' + str(len(train_dataset)))
 
-    # val_dataset = BernardImageDataset(args.path+'/val', args.dataset, args.size, train=False, args=args)
-    # val_loader = data.DataLoader(
-    #     val_dataset,
-    #     batch_size=args.batch,
-    #     sampler=data_sampler(val_dataset, shuffle=False, distributed=args.distributed),
-    #     drop_last=True,
-    #     collate_fn=collate_fn
-    # )
-    # print('Total validation dataset length: ' + str(len(val_dataset)))
+    val_dataset = OGMImageDataset(args.path + '/val', args.dataset, args.size, train=True, args=args)
+    val_loader = data.DataLoader(
+        train_dataset,
+        batch_size=args.batch,
+        sampler=data_sampler(train_dataset, shuffle=True, distributed=args.distributed),
+        drop_last=True,
+        collate_fn=collate_fn
+    )
+    print('Total validation dataset length: ' + str(len(train_dataset)))
 
     logger = None
     if get_rank() == 0:
         logger = SummaryWriter(args.log_dir)
 
-    train(args, train_loader, train_loader, None, vae, discriminator, vae_optim, d_optim, vae_ema, device, logger, percept)
+    train(args, train_loader, val_loader, None, vae, discriminator, vae_optim, d_optim, vae_ema, device, logger, percept)

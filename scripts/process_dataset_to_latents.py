@@ -1,61 +1,27 @@
-"""
-Converts occupancy grids to latent vectors using a trained StyleGAN network. 
-Code by Bernard Lange
-"""
 import argparse
 import torch
 from torch.utils import data
 import torchvision
 import os
 import sys
-from drivegan_code_modified_old.latent_decoder_model.dataset import BernardImageDatasetRaw
-from load_styleVAE import load_styleVAE
 from tqdm import tqdm
-import cv2
 import pathlib
-import numpy as np
-import hickle as hkl
-sys.path.append(str(pathlib.Path(__file__).parents[2]))
-from src.dataset.sequencedataset import LatentSequenceDataset, SequenceDataset, SequenceDatasetDriveGAN
-from src.utils.visualize_grid import save_image_grid
+
+
+sys.path.append(str(pathlib.Path(__file__).parents[1]))
+from src.utils.load_styleVAE import load_styleVAE
+from src.dataset.single_frame_dataset import OGMImageDataset
 import pickle
 
 torch.backends.cudnn.benchmark = True
 
-def save_img(name, data, n_sample, scale=True):
-    sample = data[:n_sample]
-    if scale:
-        sample = sample * 0.5 + 0.5
-    sample = torch.clamp(sample, 0, 1.0)
-    x = torchvision.utils.make_grid(
-        sample, nrow=int(n_sample ** 0.5),
-        normalize=False, scale_each=False
-    )
-    torchvision.utils.save_image(x, name)
-    #logger.add_image(name, x, step)
-
-def save_img_sequence(name, data, n_sample, scale=True):
-    #sample = data[:n_sample]
-    N, T, C, W, H = data.shape
-    sample = data.reshape(N*T,C,W,H)
-
-    if scale:
-        sample = sample * 0.5 + 0.5
-    sample = torch.clamp(sample, 0, 1.0)
-    x = torchvision.utils.make_grid(
-        sample, nrow=T,
-        normalize=False, scale_each=False
-    )
-    torchvision.utils.save_image(x, name)
-    #logger.add_image(name, x, step)
-
-
 if __name__ == '__main__':
-    device = 'cuda'
-
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--path', type=str, default='/home/benksy/Projects/Datasets/NuscenesImgsAugust2022')
+    parser.add_argument('--ogm_dataset_path', type=str, default='/home/benksy/Projects/Datasets/NuscenesImgsAugust2022StyleGAN')
+    parser.add_argument('--latent_dataset_path', type=str, default='/home/benksy/Projects/Datasets/LatentVAENuscenesDatasetAugust2022')
+    parser.add_argument('--ckpt_path', type=str, default='/home/benksy/Projects/CoRL/trained_models/Nuscenes_DriveGAN/270000.pt')
+
     parser.add_argument('--iter', type=int, default=800000)
     parser.add_argument('--save_iter', type=int, default=10000)
 
@@ -99,7 +65,7 @@ if __name__ == '__main__':
         return torch.utils.data.dataloader.default_collate(batch)
 
     config = {
-        'ckpt': '/home/benksy/Projects/CoRL/results_vae/240000.pt', #'/home/benksy/Projects/CoRL_Rebuttal/Nuscenes/270000.pt', #'/home/benksy/Projects/CoRL/results_new_dataset/230000.pt', # '/home/benksy/Projects/CoRL/results_vae/290000.pt',
+        'ckpt': args.ckpt_path, 
         'size': size,
         'n_mlp': 8,
         'device': 'cuda',
@@ -111,7 +77,7 @@ if __name__ == '__main__':
     vae.eval()
     print('Loaded the models')
 
-    def convert_dataset(loader, mode, randomly_visualize=False):
+    def convert_dataset(loader, mode):
         """
         Converts the image dataset to latent vector dataset
         """
@@ -126,46 +92,40 @@ if __name__ == '__main__':
 
             # Save latents.
             for idx, fn in enumerate(fns):
-                #print('\n \n  This is: ',fn, '\n \n')
                 scene_id, frame = fn.split('/')[-2:]
-                # print(f'{scene_id}, {frame}')
-                path = f'{latent_dataset_path}/{mode}/{scene_id}'
+                path = f'{args.latent_dataset_path}/{mode}/{scene_id}'
                 if not os.path.isdir(path):
                     os.mkdir(path)
 
                 outfile = f'{path}/{frame[:-4]}'
-                #hkl.dump({'spatial_mu': out['spatial_mu'][idx].cpu().numpy(), 'theme_mu': out['theme_mu'][idx].cpu().numpy()}, outfile, mode='w')
                 data = {'spatial_mu': out['spatial_mu'][idx].cpu().numpy(), 'theme_mu': out['theme_mu'][idx].cpu().numpy()}
                 with open(outfile, 'wb') as f:
                     pickle.dump(data, f)
 
-
-    train_dataset = BernardImageDatasetRaw(args.path+'/train', args.dataset, args.size, every_second=True, train=False, args=args)
+    train_dataset = OGMImageDataset(args.ogm_dataset_path+'/train', args.dataset, args.size, train=False, args=args, with_scene_info=True)
     train_loader = data.DataLoader(
         train_dataset,
         batch_size=256,
     )
-    val_dataset = BernardImageDatasetRaw(args.path+'/val', args.dataset, args.size, every_second=True, train=False, args=args)
+    val_dataset = OGMImageDataset(args.ogm_dataset_path+'/val', args.dataset, args.size, train=False, args=args, with_scene_info=True)
     val_loader = data.DataLoader(
         val_dataset,
         batch_size=256,
     )
 
-    test_dataset = BernardImageDatasetRaw(args.path+'/test', args.dataset, args.size, every_second=True, train=False, args=args)
+    test_dataset = OGMImageDataset(args.ogm_dataset_path+'/test', args.dataset, args.size, train=False, args=args, with_scene_info=True)
     test_loader = data.DataLoader(
         test_dataset,
         batch_size=256,
     )
 
-    latent_dataset_path = '/home/benksy/Projects/Datasets/LatentVAENuscenesDatasetAugust2022'
-    # os.mkdir(os.path.join(latent_dataset_path, 'train'))
-    # os.mkdir(os.path.join(latent_dataset_path, 'val'))
-    # os.mkdir(os.path.join(latent_dataset_path, 'test'))
-    # os.mkdir(os.path.join(latent_dataset_path, 'vis'))
+    os.mkdir(os.path.join(args.latent_dataset_path, 'train'))
+    os.mkdir(os.path.join(args.latent_dataset_path, 'val'))
+    os.mkdir(os.path.join(args.latent_dataset_path, 'test'))
 
     with torch.no_grad():
-        convert_dataset(train_loader, 'train', randomly_visualize=True)
-        convert_dataset(val_loader, 'val', randomly_visualize=True)
-        convert_dataset(test_loader, 'test', randomly_visualize=True)
+        convert_dataset(train_loader, 'train')
+        convert_dataset(val_loader, 'val')
+        convert_dataset(test_loader, 'test')
 
         

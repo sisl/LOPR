@@ -23,19 +23,19 @@ Below, we visualize two examples of predictions. For more results, check out our
 1. Task-independent Representation Learning
 
 ```python
-python src/representation_learning/main.py
+python -m torch.distributed.launch --nproc_per_node=N_GPUS --nnodes=1 --node_rank=0 scripts/train_encoder_generator.py --path DATASET_DIR 
 ```
 
 2. Convert the OGM dataset to latent dataset.
 
 ```python
-python src/dataset/process_dataset_to_latents.py
+python scripts/process_dataset_to_latents.py --ogm_dataset_path OGM_DATASET_PATH --latent_dataset_path LATENT_DATASET_PATH --ckpt_path CKPT_PATH
 ```
 
 3. Task-dependent Supervised Learning Learning
 
 ```python
-python src/prediction/train.py
+python scripts/train_prediction.py --path LATENT_DATASET_PATH
 ```
 
 ## Visualize results

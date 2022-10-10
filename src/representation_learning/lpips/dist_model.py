@@ -18,8 +18,8 @@ from tqdm import tqdm
 
 from IPython import embed
 
-from . import networks_basic as networks
-import lpips as util
+from src.representation_learning.lpips import networks_basic as networks
+from src.representation_learning import lpips as util
 
 class DistModel(BaseModel):
     def name(self):
