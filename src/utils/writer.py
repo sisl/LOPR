@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 class Writer():
     def __init__(self, log_dir, name, config):
         self.tb_writer = SummaryWriter(log_dir=log_dir)
-        wandb.init(project='Ford', group=f'Dynamics Engine', name=name, dir=log_dir, config=config)
+        wandb.init(name=name, dir=log_dir, config=config)
 
     def add_logs(self, logs, itr, mode):
         for key in logs.keys():
