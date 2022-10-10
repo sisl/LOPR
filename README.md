@@ -14,9 +14,9 @@ Below, we visualize two examples of predictions. For more results, check out our
 
 ## Setup
 
-- Python 3.7.10
-- Libraries: PyTorch (1.7.1)
-- Tested on Ubuntu 20.04 + Nvidia RTX TITAN
+- Python 3.6.9
+- Libraries: See lopr_env.yml
+- Tested on Ubuntu 20.04 + Nvidia TITAN RTX
 
 ## Training
 
@@ -38,11 +38,11 @@ python scripts/process_dataset_to_latents.py --ogm_dataset_path OGM_DATASET_PATH
 python scripts/train_prediction.py --path LATENT_DATASET_PATH
 ```
 
-## Visualize results
+<!-- ## Visualize results
 
 ```python
 python scripts/visualize.py
-```
+``` -->
 ## References:
 
 For the representation learning, we use the following implementations:
