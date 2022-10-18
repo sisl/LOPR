@@ -46,7 +46,7 @@ python scripts/visualize.py
 ## References:
 
 For the representation learning, we use the following implementations:
-- part of the DriveGAN with encoder, generator, and discriminator implementation by Name et. al. available at: https://github.com/nv-tlabs/DriveGAN_code ([License](https://github.com/nv-tlabs/DriveGAN_code/blob/master/LICENSE))
+- part of the DriveGAN with encoder, generator, and discriminator implementation by Kim et. al. available at: https://github.com/nv-tlabs/DriveGAN_code ([License](https://github.com/nv-tlabs/DriveGAN_code/blob/master/LICENSE))
 
 DriveGAN implementation uses:
 
